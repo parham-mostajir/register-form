@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فرم ورود اطلاعات</title>
+  <style>
+    body {
+      font-family: 'B Lotus', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .logo-container {
+      margin-top: 30px;
+    }
+    .form-container {
+      margin-top: 50px;
+    }
+    input[type="text"], input[type="file"] {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: lightblue;
+      border: none;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #87CEEB;
+    }
+    #imagePreview {
+      margin-top: 20px;
+      max-width: 200px;
+      max-height: 200px;
+      display: none;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- نمایش لوگو -->
+  <div class="logo-container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/ARM-Islamic-Azad-University.jpg" alt="Logo" width="200" height="200">
+  </div>
+
+  <div class="form-container">
+    <h2>فرم ورود اطلاعات</h2>
+
+    <!-- ورودی نام و نام خانوادگی -->
+    <div>
+      <input type="text" id="firstName" placeholder="نام" required><br>
+      <input type="text" id="lastName" placeholder="نام خانوادگی" required><br>
+    </div>
+
+    <!-- ورودی شماره دانشجویی -->
+    <div>
+      <input type="text" id="studentID" placeholder="شماره دانشجویی" required><br>
+    </div>
+
+    <!-- ورودی انتخاب عکس -->
+    <div>
+      <input type="file" id="photoInput" accept="image/*" required onchange="previewImage(event)"><br>
+      <img id="imagePreview" alt="Preview Image">
+    </div>
+
+    <!-- انتخاب مدرک تحصیلی با RadioButton -->
+    <div>
+      <label>
+        <input type="radio" name="degree" value="doctorate" required> ارشد
+      </label>
+      <label>
+        <input type="radio" name="degree" value="masters" required> دکترا
+      </label><br>
+    </div>
+
+    <!-- دکمه جستجو -->
+    <button onclick="submitForm()">جستجو</button>
+  </div>
+
+  <script>
+    // نمایش تصویر انتخاب شده
+    function previewImage(event) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        const imagePreview = document.getElementById('imagePreview');
+        imagePreview.src = reader.result;
+        imagePreview.style.display = 'block';  // نمایش تصویر
+      };
+      reader.readAsDataURL(event.target.files[0]);  // خواندن فایل تصویر
+    }
+
+    // ارسال فرم و هدایت به صفحه مناسب
+    function submitForm() {
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const studentID = document.getElementById('studentID').value.trim();
+      const fileInput = document.getElementById('photoInput');
+      const file = fileInput.files[0];
+      const degreeElement = document.querySelector('input[name="degree"]:checked');
+      const degree = degreeElement ? degreeElement.value : '';
+
+      // بررسی پر شدن تمامی فیلدها
+      if (!firstName || !lastName || !studentID || !file || !degree) {
+        alert('لطفاً تمامی اطلاعات را وارد کنید.');
+        return;
+      }
+
+      // بررسی فرمت فایل
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      if (!allowedExtensions.includes(fileExtension)) {
+        alert('لطفاً یک فایل تصویری معتبر انتخاب کنید (jpg, jpeg, png, gif).');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const params = `?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&studentID=${encodeURIComponent(studentID)}&photoURL=${encodeURIComponent(e.target.result)}`;
+        
+        // بررسی و هدایت به صفحه مناسب
+        if (degree === "masters") {
+          window.location.href = "mastersPage.html" + params;
+        } else if (degree === "doctorate") {
+          window.location.href = "doctoratePage.html" + params;
+        } else {
+          alert("لطفاً مدرک تحصیلی خود را انتخاب کنید.");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>انتخاب استاد</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      direction: rtl;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    .container {
+      margin-top: 50px;
+      padding: 20px;
+    }
+    .search-box, .results {
+      margin-top: 20px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    .search-button, .select-button, .reset-button, .print-button {
+      padding: 10px 15px;
+      margin-top: 10px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+    .search-button, .select-button, .reset-button {
+      background-color: lightblue;
+    }
+    .search-button:hover, .select-button:hover, .reset-button:hover {
+      background-color: #87CEEB;
+    }
+    .print-button {
+      background-color: lightgreen;
+    }
+    .print-button:hover {
+      background-color: #90EE90;
+    }
+    input, select {
+      padding: 8px;
+      margin: 5px auto;
+      display: block;
+      width: 80%;
+      max-width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .final-table {
+      display: none;
+      margin-top: 20px;
+    }
+    .hidden {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .visible {
+      display: block;
+      opacity: 1;
+      transition: opacity 0.5s;
+    }
+    .info {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .student-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .student-info img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin-left: 20px;
+    }
+    .student-info div {
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="search-box" id="searchBox">
+      <h2>جستجوی اساتید</h2>
+      <label for="daySelect">انتخاب روز:</label>
+      <select id="daySelect" aria-label="انتخاب روز">
+        <option value="0">شنبه</option>
+        <option value="1">یکشنبه</option>
+        <option value="2">دوشنبه</option>
+        <option value="3">سه‌شنبه</option>
+        <option value="4">چهارشنبه</option>
+        <option value="5">پنج‌شنبه</option>
+        <option value="6">جمعه</option>
+      </select>
+
+      <label for="majorInput">رشته:</label>
+      <input type="text" id="majorInput" placeholder="مثلاً مهندسی کامپیوتر" aria-label="رشته">
+
+      <label for="advisorName">نام استاد راهنما:</label>
+      <input type="text" id="advisorName" placeholder="نام استاد راهنما" aria-label="نام استاد راهنما">
+
+      <label for="advisorTime">ساعت حضور استاد راهنما:</label>
+      <input type="text" id="advisorTime" placeholder="مثلاً 10:00 - 12:00" aria-label="ساعت حضور استاد راهنما">
+
+      <label for="consultantName">نام استاد مشاور (اختیاری):</label>
+      <input type="text" id="consultantName" placeholder="نام استاد مشاور" aria-label="نام استاد مشاور">
+
+      <label for="consultantTime">ساعت حضور استاد مشاور (اختیاری):</label>
+      <input type="text" id="consultantTime" placeholder="مثلاً 14:00 - 16:00" aria-label="ساعت حضور استاد مشاور">
+
+      <button class="search-button" onclick="findAvailableProfessors()">جستجو</button>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <div class="final-table" id="finalTable">
+      <h2>لیست نهایی اساتید انتخاب‌شده</h2>
+      <!-- بخش اطلاعات دانشجو -->
+      <div class="student-info">
+        <img id="photo" src="" alt="عکس">
+        <div>
+          <div class="info" id="name"></div>
+          <div class="info" id="lastName"></div>
+          <div class="info" id="studentID"></div>
+        </div>
+      </div>
+
+      <!-- جدول اساتید انتخاب‌شده -->
+      <table>
+        <thead>
+          <tr>
+            <th>استاد راهنما</th>
+            <th>استاد مشاور</th>
+            <th>استاد انتخاب‌شده</th>
+            <th>بازه زمانی مشترک</th>
+          </tr>
+        </thead>
+        <tbody id="selectedTableBody"></tbody>
+      </table>
+
+      <button class="print-button" onclick="printPage()">پرینت صفحه</button>
+      <button class="reset-button" onclick="resetSelection()">بازگشت به جستجو</button>
+    </div>
+  </div>
+
+  <script>
+    let selectedProfessors = [];
+
+    function validateTimeFormat(time) {
+      return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(time);
+    }
+
+    function parseTimeInterval(interval) {
+      let parts = interval.split('-').map(p => p.trim());
+      let startParts = parts[0].split(':').map(Number);
+      let endParts = parts[1].split(':').map(Number);
+      let start = startParts[0] * 60 + startParts[1];
+      let end = endParts[0] * 60 + endParts[1];
+      return { start, end };
+    }
+
+    function formatTimeInterval(start, end) {
+      let startHours = Math.floor(start / 60);
+      let startMinutes = start % 60;
+      let endHours = Math.floor(end / 60);
+      let endMinutes = end % 60;
+      return `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')} - ${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+    }
+
+    function getIntersection(intervals) {
+      if (intervals.length === 0) return "";
+      let intersectionStart = 0;
+      let intersectionEnd = 24 * 60; // 1440 دقیقه
+      intervals.forEach(interval => {
+        let { start, end } = parseTimeInterval(interval);
+        intersectionStart = Math.max(intersectionStart, start);
+        intersectionEnd = Math.min(intersectionEnd, end);
+      });
+      if (intersectionStart >= intersectionEnd) {
+        return "عدم تطابق";
+      } else {
+        return formatTimeInterval(intersectionStart, intersectionEnd);
+      }
+    }
+
+    function findAvailableProfessors() {
+      const selectedDay = document.getElementById("daySelect").value;
+      const userMajor = document.getElementById("majorInput").value.trim();
+      const advisorTime = document.getElementById("advisorTime").value.trim();
+      const consultantTime = document.getElementById("consultantTime").value.trim();
+
+      if (!userMajor || !advisorTime || !validateTimeFormat(advisorTime)) {
+        alert("لطفاً اطلاعات را به درستی وارد کنید.");
+        return;
+      }
+      if (consultantTime && !validateTimeFormat(consultantTime)) {
+        alert("فرمت ساعت استاد مشاور نامعتبر است.");
+        return;
+      }
+
+      let query = `day=${selectedDay}&major=${userMajor}&advisorTime=${advisorTime}`;
+      if (consultantTime) query += `&consultantTime=${consultantTime}`;
+
+      fetch(`http://localhost:5000/find_schedule?${query}`)
+        .then(response => {
+          if (!response.ok) throw new Error(`خطا در دریافت اطلاعات (${response.status})`);
+          return response.json();
+        })
+        .then(data => {
+          const resultsDiv = document.getElementById("results");
+          resultsDiv.innerHTML = "";
+
+          if (!data.professors || data.professors.length === 0) {
+            resultsDiv.innerHTML = "<p>هیچ استادی با این شرایط پیدا نشد.</p>";
+          } else {
+            let table = `<table>
+                          <tr>
+                            <th>نام</th>
+                            <th>رشته</th>
+                            <th>ساعات حضور</th>
+                            <th>انتخاب</th>
+                          </tr>`;
+            data.professors.forEach(prof => {
+              table += `<tr>
+                          <td>${prof["نام"]}</td>
+                          <td>${prof["رشته"]}</td>
+                          <td>${prof["ساعات حضور"]}</td>
+                          <td>
+                            <button class="select-button" onclick="selectProfessor('${prof["نام"]}', '${prof["ساعات حضور"]}')">انتخاب</button>
+                          </td>
+                        </tr>`;
+            });
+            table += `</table>`;
+            resultsDiv.innerHTML = table;
+          }
+        })
+        .catch(error => {
+          console.error("خطا در دریافت داده‌ها:", error);
+          alert("خطا در ارتباط با سرور.");
+        });
+    }
+
+    function selectProfessor(selectedProfessorName, selectedProfessorTime) {
+      const advisorName = document.getElementById("advisorName").value.trim();
+      const consultantName = document.getElementById("consultantName").value.trim();
+      const advisorTime = document.getElementById("advisorTime").value.trim();
+      const consultantTime = document.getElementById("consultantTime").value.trim();
+
+      let intervals = [advisorTime, selectedProfessorTime];
+      if (consultantTime) {
+        intervals.push(consultantTime);
+      }
+      let timeRange = getIntersection(intervals);
+
+      const selection = {
+        advisor: advisorName,
+        consultant: consultantName,
+        professor: selectedProfessorName,
+        timeRange: timeRange
+      };
+
+      selectedProfessors.push(selection);
+
+      document.getElementById("searchBox").style.display = "none";
+      document.getElementById("results").style.display = "none";
+      document.getElementById("finalTable").style.display = "block";
+
+      const tbody = document.getElementById("selectedTableBody");
+      tbody.innerHTML = "";
+      selectedProfessors.forEach(item => {
+        tbody.innerHTML += `<tr>
+                              <td>${item.advisor}</td>
+                              <td>${item.consultant ? item.consultant : "-"}</td>
+                              <td>${item.professor}</td>
+                              <td>${item.timeRange}</td>
+                            </tr>`;
+      });
+
+      // نمایش اطلاعات دانشجو
+      const params = new URLSearchParams(window.location.search);
+      const firstName = params.get('firstName');
+      const lastName = params.get('lastName');
+      const studentID = params.get('studentID');
+      const photoURL = params.get('photoURL');
+
+      if (firstName && lastName && studentID && photoURL) {
+        document.getElementById("name").textContent = `نام: ${firstName}`;
+        document.getElementById("lastName").textContent = `نام خانوادگی: ${lastName}`;
+        document.getElementById("studentID").textContent = `شماره دانشجویی: ${studentID}`;
+        document.getElementById("photo").src = photoURL;
+      }
+    }
+
+    function resetSelection() {
+      document.getElementById("searchBox").style.display = "block";
+      document.getElementById("results").style.display = "block";
+      document.getElementById("finalTable").style.display = "none";
+      selectedProfessors = [];
+    }
+
+    function printPage() {
+      window.print();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خوش آمدید به صفحه دکترا</title>
+  <style>
+    body {
+      font-family: 'B Lotus', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      margin-top: 50px;
+    }
+    img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+    }
+    .info {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+    .back-button, .search-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: lightblue;
+      border: none;
+      cursor: pointer;
+    }
+    .back-button:hover, .search-button:hover {
+      background-color: #87CEEB;
+    }
+    .search-box {
+      margin-top: 30px;
+    }
+    .results {
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jalali-moment/dist/jalali-moment.browser.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker/dist/js/persian-datepicker.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker/dist/css/persian-datepicker.min.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>خوش آمدید به صفحه دکترا</h2>
+    <div id="studentInfo">
+      <img id="photo" src="" alt="عکس">
+      <div class="info" id="name"></div>
+      <div class="info" id="studentID"></div>
+      <div class="info" id="major"></div>
+      <div class="info" id="degree"></div>
+    </div>
+    
+    <div class="search-box">
+      <label for="dateInput">یک تاریخ انتخاب کنید (مثال: 1402/12/10):</label>
+      <input type="text" id="dateInput">
+      <button class="search-button" onclick="findAvailableProfessors()">جستجو</button>
+    </div>
+
+    <div class="results" id="results"></div>
+    
+    <button class="back-button" onclick="window.history.back()">بازگشت</button>
+  </div>
+
+  <script>
+    window.onload = function() {
+      // دریافت اطلاعات از URL
+      const params = new URLSearchParams(window.location.search);
+      const firstName = params.get('firstName');
+      const lastName = params.get('lastName');
+      const studentID = params.get('studentID');
+      const major = params.get('major');
+      const photoURL = params.get('photoURL');
+      
+      // نمایش اطلاعات در صفحه
+      if (firstName && lastName && studentID && major && photoURL) {
+        document.getElementById("name").textContent = `نام: ${firstName} ${lastName}`;
+        document.getElementById("studentID").textContent = `شماره دانشجویی: ${studentID}`;
+        document.getElementById("major").textContent = `رشته تحصیلی: ${major}`;
+        document.getElementById("degree").textContent = `مدرک تحصیلی: دکترا`; // دکترا ثابت است
+        document.getElementById("photo").src = photoURL;
+      }
+
+      // فعال‌سازی انتخاب تاریخ جلالی
+      new persianDatepicker("#dateInput", { format: 'YYYY/MM/DD' });
+    };
+
+    function findAvailableProfessors() {
+      const persianDate = document.getElementById("dateInput").value;
+      if (!persianDate) {
+        alert("لطفاً یک تاریخ انتخاب کنید.");
+        return;
+      }
+
+      const gregorianDate = moment.from(persianDate, 'fa', 'YYYY/MM/DD').format('YYYY-MM-DD');
+      fetch(`http://localhost:5000/find_schedule?date=${gregorianDate}`)
+        .then(response => response.json())
+        .then(data => {
+          const resultsDiv = document.getElementById("results");
+          resultsDiv.innerHTML = "";
+          if (data.length === 0) {
+            resultsDiv.innerHTML = "<p>هیچ ترکیب ۳ استادی با زمان مشترک پیدا نشد.</p>";
+          } else {
+            data.forEach((group, index) => {
+              const btn = document.createElement("button");
+              btn.innerText = `انتخاب ترکیب ${index + 1}`;
+              btn.onclick = () => {
+                const selectedGroup = group.map(prof => `${prof.name} (${prof.major})`);
+                const persianDateConverted = moment(gregorianDate, 'YYYY-MM-DD').format('jYYYY/jMM/jDD');
+                alert(`ترکیب انتخابی: ${selectedGroup.join(" | ")}\nتاریخ: ${persianDateConverted}`);
+                window.location.href = `details.html?group=${encodeURIComponent(JSON.stringify(group))}&date=${persianDateConverted}`;
+              };
+              resultsDiv.appendChild(document.createElement("p")).innerText = group.map(prof => `${prof.name} (${prof.major})`).join(" | ");
+              resultsDiv.appendChild(btn);
+            });
+          }
+        })
+        .catch(error => console.error("خطا در دریافت داده‌ها", error));
+    }
+
+    // تابع نمایش عکس هنگام انتخاب
+    function previewImage(event) {
+      const photo = document.getElementById("photo");
+      const reader = new FileReader();
+      
+      reader.onload = function() {
+        photo.src = reader.result;
+      };
+      
+      reader.readAsDataURL(event.target.files[0]);
+    }
+  </script>
+</body>
+</html>
